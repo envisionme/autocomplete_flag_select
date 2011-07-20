@@ -13,12 +13,6 @@ function autocomplete_flag_select_help($path, $args) {
  * Implementation of hook_menu()
  */
 function  autocomplete_flag_select_menu() {   
-  // $items['autocomplete_flag_select/autocomplete/%'] = array(
-    // 'page callback' => 'autocomplete_flag_select_autocomplete',
-    // 'page arguments' => array(2),
-    // 'type' => MENU_CALLBACK,
-    // 'access arguments' => array('access example autocomplete'),
-  // );
   $items['admin/settings/autocomplete_flag_select'] = array(
     'title' => 'Autocomplete flag select',
     'description' => 'Configure the autocomplete flag select.',
@@ -62,38 +56,96 @@ function autocomplete_flag_select_block($op = 'list', $delta = 0, $edit = array(
 * Implementation of hook_form()
 */
 function autocomplete_flag_select_form() {
-  $form = array();          
+  $form = array();
+
+  global $user;
+  // get user to be flag
+  if (arg(0) == 'user' && is_numeric(arg(1))) {
+    $form['flagged_user'] = array(
+      '#type' => 'value',
+      '#value' => arg(1)
+     );
+  }
   $form['fields'] = array(
-  '#type' => 'fieldset',
-  '#title' => t('Shortlist for position'),
-  // '#description' => t('Please note that you have to right click to view source and find the correct variables.'),
-  '#collapsible' => FALSE,
-  '#collapsed' => FALSE,
-  '#attributes' => array('class' => 'autocomplete-flag-select'),
-  ); 
-  
-  $form['fields']['nid'] = array(
+    '#type' => 'fieldset',
+    '#description' => t('Please enter node title to flag the user with.'),
+    '#collapsible' => FALSE,
+    '#collapsed' => FALSE,
+    '#attributes' => array('class' => 'autocomplete-flag-select'),
+  );
+
+  $form['fields']['node'] = array(
     '#type' => 'textfield',
-    '#size' => 20,
+    '#size' => 25,
     '#autocomplete_path' => "autocomplete_flag_select/autocomplete",
   );
-  
+
   // use custom submit handler
   $form['fields']['buttons']['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Shortlist'),
     '#submit' => array('autocomplete_flag_select_form_submit'),
   );
+
   return $form;
 }
+
+/**
+ * Implementation of hook_submit()
+ */
+function autocomplete_flag_select_form_submit($form, &$form_state) {
+  // Get the nid from submitted node title
+  $start = strripos($form_state['values']['node'], '[nid:')+5;
+  $nid = substr($form_state['values']['node'], $start, -1);
+  
+  $flag_get = variable_get('autocomplete_flag_select_flag_type', '');
+  if(!empty($flag_get)) {
+    // switch user to correct user for flagging
+    global $user;
+    $curren_user = $user;
+    session_save_session(FALSE);
+    $user = user_load($form_state['values']['flagged_user']);
+    // Flag node
+    $flag = flag_get_flag($flag_get) or die('no ' . $flag_get . ' flag defined');
+    if (!$flag->is_flagged($nid)) {
+      $flag->flag('flag', $nid);
+    	drupal_set_message($flag->flag_message);
+    }
+    // switch user back to correct user
+    $user = $curren_user;
+    session_save_session(TRUE);
+  }
+}
+
+function _autocomplete_flag_select_nodes_flagged(){
+  global $user;
+  // Get the content type to search for.
+  $content_type = variable_get('autocomplete_flag_select_node_type', '');
+  $matches = array();
+  // create the SQL to query the node table
+  // $sql = db_query("SELECT f.fid FROM {flag_content} WHERE f.fid = %d AND u.uid = %d", $this->fid, $uid);
+  // $sql = db_query("SELECT f.fid FROM {flag_content} WHERE f.fid = %d AND u.uid = %d", $this->fid, $uid);
+  // $result = db_query('SELECT f.filepath, f.timestamp FROM {node} n INNER JOIN {content_type_resume_file} r ON n.nid = r.nid INNER JOIN {files} f ON f.fid = r.field_resume_file_fid WHERE n.uid = %d AND n.type = \'%s\'', $uid, 'resume_file');
+  
+  $fid = variable_get('autocomplete_flag_select_flag_type', '');
+  $sql = db_query("SELECT n.nid, n.title FROM {node} n INNER JOIN {flag_content} f ON n.nid = f.content_id WHERE n.status = 1 AND n.uid = %d AND n.type = '%s'", $user->uid, $content_type);
+   
+  while ($row = db_fetch_array($sql)) {
+    dpm($row);
+    // return $matches[$row['title']] = check_plain($row['uid']);
+  }
+  
+  // return '';
+  // return $matches;
+}
+
 /**
  * Implementation of hook_autocomplete()
  */
 function autocomplete_flag_select_autocomplete($string) {
   global $user;
   // Get the content type to search for.
-  $select_type = variable_get('autocomplete_flag_permission_type', '');
-  dpm($select_type);
+  $select_type = variable_get('autocomplete_flag_select_node_type', '');
   $matches = array();
   // create the SQL to query the node table
   $sql = "SELECT n.nid, n.title FROM {node} n WHERE n.status = 1 AND n.type = '%s' AND lower(n.title) LIKE lower('%%%s%%') AND n.uid = %d ORDER BY n.title ASC";
@@ -106,37 +158,4 @@ function autocomplete_flag_select_autocomplete($string) {
     }
   }
   drupal_json($matches);  
-}
-
-function autocomplete_flag_select_form_submit($form, &$form_state) {
-  
-  // Get the nid from form
-  $str_autocomplete = $form_state['values']['nid'];
-  $str_rev = strrev($str_autocomplete);
-  $int_firstChar = strpos($str_rev, ':');
-  $str_unsorted = substr($str_rev, 0, $int_firstChar);
-  $str_revUnsorted = strrev($str_unsorted);
-  $int_lastChar = strpos($str_revUnsorted, ']');
-  $str_sorted = substr($str_revUnsorted,0, $int_lastChar);
-  $flag_node = $str_sorted; 
-  
-  //Retrieve all the flag names
-  $flags = flag_get_flags();
-  
-  $flag_fid= array();
-    foreach ($flags as $flag) {
-      $flag_fid[$flag->fid] = $flag->name;
-    }  
-  
-  $flag_get = variable_get('autocomplete_flag_type', '');
-  if(!empty($flag_get)) {
-    $flag = flag_get_flag($flag_fid[$flag_get]) or die('no '.$flag_fid[$flag_get].' flag defined');
-    
-    // Flag node
-    if ($flag->is_flagged($flag_node)) {
-      $flag->flag('unflag', $flag_node);
-    } else {
-       $flag->flag('flag', $flag_node);
-    }  
-  }
 }
