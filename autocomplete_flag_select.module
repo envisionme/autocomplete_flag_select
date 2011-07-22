@@ -13,7 +13,7 @@ function autocomplete_flag_select_help($path, $args) {
  * Implementation of hook_menu()
  */
 function  autocomplete_flag_select_menu() {   
-  $items['admin/settings/autocomplete_flag_select'] = array(
+  $items['admin/build/autocomplete_flag_select'] = array(
     'title' => 'Autocomplete flag select',
     'description' => 'Configure the autocomplete flag select.',
     'page callback' => 'drupal_get_form',
@@ -36,20 +36,22 @@ function  autocomplete_flag_select_menu() {
  * Implementation of hook_block()
  */
 function autocomplete_flag_select_block($op = 'list', $delta = 0, $edit = array()) {
+  global $user;
   $select_type = variable_get('autocomplete_flag_permission_types', array());
-  if (!empty($select_type)){
    switch ($op) {
      //Define the block
      case 'list':
        $blocks[0]['info'] = t('Autocomplete flag select');
        return $blocks;
         
-     case 'view': 
-       // $block['subject'] = t('Shortlist for position');       
+     case 'view':
+     if (arg(0) == 'user' && is_numeric(arg(1))) {
+      if (!empty($select_type)){      
        $block['content'] = drupal_get_form('autocomplete_flag_select_form', 'block'); 
        return $block;
+      }
+     }  
    }
-  } 
 }
 
 /**
