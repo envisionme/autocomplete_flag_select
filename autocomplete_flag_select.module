@@ -37,7 +37,7 @@ function  autocomplete_flag_select_menu() {
     'type' => MENU_CALLBACK
    );
    
-   $items['unflag/%/%'] = array(
+   $items['unflag-node/%/%'] = array(
     'title' => 'Unflag node',
     'page callback' => '_autocomplete_flag_select_unflag_node',
     'page arguments' => array(1,2),
@@ -99,7 +99,7 @@ function autocomplete_flag_select_form() {
   // dpm($flagged_nodes);
   $markup = '';
   foreach ($flagged_nodes as $nid => $title) {
-   $markup .= l($title, 'node/' . $nid) . l('X', 'unflag-node/' . $uid . '/' . $nid, array('attributes' => array('class' => 'remove-node'), 'ajax' => array('callback' => '_autocomplete_flag_select_unflag'))) . '<br/>';  
+   $markup .= l($title, 'node/' . $nid) . l('X', 'unflag-node/' . $uid . '/' . $nid, array('attributes' => array('class' => 'remove-node'), 'query' => array('destination' => $_GET['q']))) . '<br/>';  
   }
   
   $form['fields']['list'] = array(  
@@ -119,7 +119,6 @@ function autocomplete_flag_select_form() {
     '#value' => t('Shortlist'),
     '#submit' => array('autocomplete_flag_select_form_submit'),
   );
-
   return $form;
 }
 
@@ -153,8 +152,32 @@ function autocomplete_flag_select_form_submit($form, &$form_state) {
 /**
  *  Check what nid to unflag
  */
-function _autocomplete_flag_select_unflag_node(){
-  echo "Hallo";
+function _autocomplete_flag_select_unflag_node($uid, $nid) {
+  // makesure integer values are supplied
+  if (!is_numeric($uid) || !is_numeric($nid))
+    return '';
+    
+  // Get the nid from submitted node title
+  $flag_get = variable_get('autocomplete_flag_select_flag_type', '');  
+  // print_r($flaggings);
+  if(!empty($flag_get)) {
+    // switch user to correct user for flagging
+    global $user;
+    $curren_user = $user;
+    session_save_session(FALSE);
+    $user = user_load($uid);
+    // Flag node
+    $flag = flag_get_flag($flag_get) or die('no ' . $flag_get . ' flag defined');
+    if ($flag->is_flagged($nid)) {
+      $flag->flag('unflag', $nid);
+    	drupal_set_message($flag->unflag_message);
+    }
+    // switch user back to correct user
+    $user = $curren_user;
+    session_save_session(TRUE);
+  }
+  drupal_goto(drupal_get_destination());
+  return '';
 }
 
 /**
