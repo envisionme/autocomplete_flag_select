@@ -111,8 +111,7 @@ function autocomplete_flag_select_form() {
   );
   
   // get nodes user was flagged with
-  $flagged_nodes = _autocomplete_flag_select_nodes_flagged();
-  // dpm($flagged_nodes);
+  $flagged_nodes = theme('autocomplete_flag_select_nodes_flagged');
   $markup = '';
   foreach ($flagged_nodes as $nid => $title) {
    $markup .= l($title, 'node/' . $nid) . l('X', 'unflag-node/' . $uid . '/' . $nid, array('attributes' => array('class' => 'remove-node'), 'query' => array('destination' => $_GET['q']))) . '<br/>';  
@@ -197,30 +196,6 @@ function _autocomplete_flag_select_unflag_node($uid, $nid) {
 }
 
 /**
- *  Iterate threw flags that was flagged by user and print them out.
- */
-function _autocomplete_flag_select_nodes_flagged(){
-  global $user;
-  // Get the content type to search for.
-  $content_type = variable_get('autocomplete_flag_select_node_type', '');
-  
-  $matches = array();
-  
-  $fid = variable_get('autocomplete_flag_select_flag_type', '');
-  // if (arg(0) == 'user' && is_numeric(arg(1)))
-  
-  $sql = db_query("SELECT n.nid, n.title FROM {node} n INNER JOIN {flag_content} f ON n.nid = f.content_id WHERE n.status = 1 AND n.uid = %d AND n.type = '%s' AND f.uid = %d", $user->uid, $content_type, arg(1));  
-  
-  $matches = array();
-  //assigns the actual values into an array
-  while($row = db_fetch_array($sql)) {
-    $matches[$row['nid']] = $row['title'];
-  }
-  
-  return $matches;
-}
-
-/**
  * Implementation of hook_autocomplete()
  */
 function autocomplete_flag_select_autocomplete($string) {
@@ -235,7 +210,8 @@ function autocomplete_flag_select_theme() {
     // Themes for the formatters.
     'autocomplete_flag_select_autocomplete' => array(
       'arguments' => array('string' => ''),
-    ),
+    ),    
+    'autocomplete_flag_select_nodes_flagged' => array(),
   );
 }
 
@@ -258,4 +234,26 @@ function theme_autocomplete_flag_select_autocomplete($string) {
     }
   }
   return drupal_json($matches);
+}
+
+/**
+* Theme function for 'default' companyfield formatter.
+*/
+function theme_autocomplete_flag_select_nodes_flagged() {
+  global $user;
+  // Get the content type to search for.
+  $content_type = variable_get('autocomplete_flag_select_node_type', '');
+  
+  $matches = array();
+  
+  $fid = variable_get('autocomplete_flag_select_flag_type', '');
+  
+  $sql = db_query("SELECT n.nid, n.title FROM {node} n INNER JOIN {flag_content} f ON n.nid = f.content_id WHERE n.status = 1 AND n.uid = %d AND n.type = '%s' AND f.uid = %d", $user->uid, $content_type, arg(1));  
+  
+  $matches = array();
+  //assigns the actual values into an array
+  while($row = db_fetch_array($sql)) {
+    $matches[$row['nid']] = $row['title'];
+  }
+  return $matches;
 }
