@@ -9,6 +9,12 @@ function autocomplete_flag_select_help($path, $args) {
   }
 }
 
+/**
+ * Implementation of hook_perm()
+ */
+function autocomplete_flag_select_perm() {
+	return array('allow autocomplete flag select access',  'administer access to autocomplete flag select');
+}
 
 /**
  * Implementation of hook_init()
@@ -34,8 +40,7 @@ function  autocomplete_flag_select_menu() {
   $items["autocomplete_flag_select/autocomplete"] = array(
     'title' => 'Autocomplete flag select',
     'page callback' => 'autocomplete_flag_select_autocomplete',
-    'access callback' =>TRUE,
-    'access arguments' => array(1),
+    'access arguments' => array('allow autocomplete flag select access'),
     'type' => MENU_CALLBACK
    );
    
@@ -43,31 +48,40 @@ function  autocomplete_flag_select_menu() {
     'title' => 'Unflag node',
     'page callback' => '_autocomplete_flag_select_unflag_node',
     'page arguments' => array(1,2),
-    'access arguments' => array(true),
+    'access callback' => 'autocomplete_flag_select_access',
+    'access arguments' => array(2),
     'type' => MENU_CALLBACK,
   );
   return $items;
+}
+
+
+function autocomplete_flag_select_access($nid = 0) {
+  global $user;
+  // get the node author UID
+  $result = db_query('SELECT n.uid FROM {node} n WHERE n.nid = %d LIMIT 1', $nid);
+  $uid = db_fetch_array($result);
+  return (user_access('allow autocomplete flag select access') && $uid == $user->uid) || user_access('administer access to autocomplete flag select');
 }
 
 /**
  * Implementation of hook_block()
  */
 function autocomplete_flag_select_block($op = 'list', $delta = 0, $edit = array()) {
-  global $user;
-  $select_type = variable_get('autocomplete_flag_permission_types', array());
-   switch ($op) {
-     //Define the block
-     case 'list':
-       $blocks[0]['info'] = t('Autocomplete flag select');
-       return $blocks;
+  switch ($op) {
+    //Define the block
+    case 'list':
+      $blocks[0]['info'] = t('Autocomplete flag select');
+      return $blocks;
+    break;
         
-     case 'view':
-     if (arg(0) == 'user' && is_numeric(arg(1))) {
-      if (!empty($select_type)){
-       $block['content'] = drupal_get_form('autocomplete_flag_select_form', 'block'); 
-       return $block;
+    case 'view':
+      $flag_type = variable_get('autocomplete_flag_select_flag_type', '');
+      if (arg(0) == 'user' && is_numeric(arg(1)) && !empty($flag_type)) {
+        $block['content'] = drupal_get_form('autocomplete_flag_select_form', 'block'); 
+        return $block;
       }
-    }
+    break;
   }
 }
 
@@ -210,6 +224,25 @@ function _autocomplete_flag_select_nodes_flagged(){
  * Implementation of hook_autocomplete()
  */
 function autocomplete_flag_select_autocomplete($string) {
+  return theme('autocomplete_flag_select_autocomplete', $string); 
+}
+
+/**
+* Implementation of hook_theme().
+*/
+function autocomplete_flag_select_theme() {
+  return array(
+    // Themes for the formatters.
+    'autocomplete_flag_select_autocomplete' => array(
+      'arguments' => array('string' => ''),
+    ),
+  );
+}
+
+/**
+* Theme function for 'default' companyfield formatter.
+*/
+function theme_autocomplete_flag_select_autocomplete($string) {
   global $user;
   // Get the content type to search for.
   $select_type = variable_get('autocomplete_flag_select_node_type', '');
@@ -224,5 +257,5 @@ function autocomplete_flag_select_autocomplete($string) {
       $matches[$row['title'] . ' [nid:' . $row['nid'] . ']'] = check_plain($row['title']);
     }
   }
-  drupal_json($matches);  
+  return drupal_json($matches);
 }
