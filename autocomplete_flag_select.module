@@ -9,6 +9,13 @@ function autocomplete_flag_select_help($path, $args) {
   }
 }
 
+
+/**  
+ * Implementation of hook_init()
+ */
+ 
+// function autocomplete_flag_select_init() 
+
 /**
  * Implementation of hook_menu()
  */
@@ -29,6 +36,14 @@ function  autocomplete_flag_select_menu() {
     'access arguments' => array(1),
     'type' => MENU_CALLBACK
    );
+   
+   $items['unflag/%/%'] = array(
+    'title' => 'Unflag node',
+    'page callback' => '_autocomplete_flag_select_unflag_node',
+    'page arguments' => array(1,2),
+    'access arguments' => array(true),
+    'type' => MENU_CALLBACK,
+  );
   return $items;
 }
 
@@ -46,12 +61,12 @@ function autocomplete_flag_select_block($op = 'list', $delta = 0, $edit = array(
         
      case 'view':
      if (arg(0) == 'user' && is_numeric(arg(1))) {
-      if (!empty($select_type)){      
+      if (!empty($select_type)){
        $block['content'] = drupal_get_form('autocomplete_flag_select_form', 'block'); 
        return $block;
       }
-     }  
-   }
+    }
+  }
 }
 
 /**
@@ -61,13 +76,16 @@ function autocomplete_flag_select_form() {
   $form = array();
 
   global $user;
+  $uid = 0;
   // get user to be flag
   if (arg(0) == 'user' && is_numeric(arg(1))) {
+    $uid = arg(1);
     $form['flagged_user'] = array(
       '#type' => 'value',
-      '#value' => arg(1)
+      '#value' => $uid,
      );
   }
+  
   $form['fields'] = array(
     '#type' => 'fieldset',
     '#description' => t('Please enter node title to flag the user with.'),
@@ -75,13 +93,26 @@ function autocomplete_flag_select_form() {
     '#collapsed' => FALSE,
     '#attributes' => array('class' => 'autocomplete-flag-select'),
   );
+  
+  // get nodes user was flagged with
+  $flagged_nodes = _autocomplete_flag_select_nodes_flagged();
+  // dpm($flagged_nodes);
+  $markup = '';
+  foreach ($flagged_nodes as $nid => $title) {
+   $markup .= l($title, 'node/' . $nid) . l('X', 'unflag-node/' . $uid . '/' . $nid, array('attributes' => array('class' => 'remove-node'), 'ajax' => array('callback' => '_autocomplete_flag_select_unflag'))) . '<br/>';  
+  }
+  
+  $form['fields']['list'] = array(  
+    '#attributes' => array('class' => 'autocomplete-flag-select-title'),
+    '#value' => $markup,
+  );
 
   $form['fields']['node'] = array(
     '#type' => 'textfield',
     '#size' => 25,
     '#autocomplete_path' => "autocomplete_flag_select/autocomplete",
-  );
-
+  );  
+   
   // use custom submit handler
   $form['fields']['buttons']['submit'] = array(
     '#type' => 'submit',
@@ -119,26 +150,35 @@ function autocomplete_flag_select_form_submit($form, &$form_state) {
   }
 }
 
+/**
+ *  Check what nid to unflag
+ */
+function _autocomplete_flag_select_unflag_node(){
+  echo "Hallo";
+}
+
+/**
+ *  Iterate threw flags that was flagged by user and print them out.
+ */
 function _autocomplete_flag_select_nodes_flagged(){
   global $user;
   // Get the content type to search for.
   $content_type = variable_get('autocomplete_flag_select_node_type', '');
+  
   $matches = array();
-  // create the SQL to query the node table
-  // $sql = db_query("SELECT f.fid FROM {flag_content} WHERE f.fid = %d AND u.uid = %d", $this->fid, $uid);
-  // $sql = db_query("SELECT f.fid FROM {flag_content} WHERE f.fid = %d AND u.uid = %d", $this->fid, $uid);
-  // $result = db_query('SELECT f.filepath, f.timestamp FROM {node} n INNER JOIN {content_type_resume_file} r ON n.nid = r.nid INNER JOIN {files} f ON f.fid = r.field_resume_file_fid WHERE n.uid = %d AND n.type = \'%s\'', $uid, 'resume_file');
   
   $fid = variable_get('autocomplete_flag_select_flag_type', '');
-  $sql = db_query("SELECT n.nid, n.title FROM {node} n INNER JOIN {flag_content} f ON n.nid = f.content_id WHERE n.status = 1 AND n.uid = %d AND n.type = '%s'", $user->uid, $content_type);
-   
-  while ($row = db_fetch_array($sql)) {
-    dpm($row);
-    // return $matches[$row['title']] = check_plain($row['uid']);
+  // if (arg(0) == 'user' && is_numeric(arg(1)))
+  
+  $sql = db_query("SELECT n.nid, n.title FROM {node} n INNER JOIN {flag_content} f ON n.nid = f.content_id WHERE n.status = 1 AND n.uid = %d AND n.type = '%s' AND f.uid = %d", $user->uid, $content_type, arg(1));  
+  
+  $matches = array();
+  //assigns the actual values into an array
+  while($row = db_fetch_array($sql)) {
+    $matches[$row['nid']] = $row['title'];
   }
   
-  // return '';
-  // return $matches;
+  return $matches;
 }
 
 /**
