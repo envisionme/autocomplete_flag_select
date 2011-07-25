@@ -1,6 +1,6 @@
 <?php
 /**
- * Implementation of hook_help()
+ * Implementation of hook_help ().
  */
 function autocomplete_flag_select_help($path, $args) {
   if ($path == 'admin/help#autocomplete-flag-select') {
@@ -10,22 +10,22 @@ function autocomplete_flag_select_help($path, $args) {
 }
 
 /**
- * Implementation of hook_perm()
+ * Implementation of hook_perm ().
  */
 function autocomplete_flag_select_perm() {
-	return array('allow autocomplete flag select access',  'administer access to autocomplete flag select');
+  return array('allow autocomplete flag select access',  'administer access to autocomplete flag select');
 }
 
 /**
- * Implementation of hook_init()
- */ 
+ * Implementation of hook_init ().
+ */
 function autocomplete_flag_select_init() {
   $path = drupal_get_path('module', 'autocomplete_flag_select');
   drupal_add_css($path .'/autocomplete_flag_select.css');
 }
 
 /**
- * Implementation of hook_menu()
+ * Implementation of hook_menu ().
  */
 function  autocomplete_flag_select_menu() {   
   $items['admin/build/autocomplete_flag_select'] = array(
@@ -42,12 +42,12 @@ function  autocomplete_flag_select_menu() {
     'page callback' => 'autocomplete_flag_select_autocomplete',
     'access arguments' => array('allow autocomplete flag select access'),
     'type' => MENU_CALLBACK
-   );
-   
-   $items['unflag-node/%/%'] = array(
+  );
+
+  $items['unflag-node/%/%'] = array(
     'title' => 'Unflag node',
     'page callback' => '_autocomplete_flag_select_unflag_node',
-    'page arguments' => array(1,2),
+    'page arguments' => array(1, 2),
     'access callback' => 'autocomplete_flag_select_access',
     'access arguments' => array(2),
     'type' => MENU_CALLBACK,
@@ -65,7 +65,7 @@ function autocomplete_flag_select_access($nid = 0) {
 }
 
 /**
- * Implementation of hook_block()
+ * Implementation of hook_block ().
  */
 function autocomplete_flag_select_block($op = 'list', $delta = 0, $edit = array()) {
   switch ($op) {
@@ -86,11 +86,11 @@ function autocomplete_flag_select_block($op = 'list', $delta = 0, $edit = array(
 }
 
 /**
-* Implementation of hook_form()
-*/
+ * Implementation of hook_form ().
+ */
 function autocomplete_flag_select_form() {
   $form = array();
-   
+
   global $user;
   $uid = 0;
   // get user to be flag
@@ -99,7 +99,7 @@ function autocomplete_flag_select_form() {
     $form['flagged_user'] = array(
       '#type' => 'value',
       '#value' => $uid,
-     );
+    );
   }
   
   $form['fields'] = array(
@@ -114,7 +114,7 @@ function autocomplete_flag_select_form() {
   $flagged_nodes = theme('autocomplete_flag_select_nodes_flagged');
   $markup = '';
   foreach ($flagged_nodes as $nid => $title) {
-   $markup .= l($title, 'node/' . $nid) . l('X', 'unflag-node/' . $uid . '/' . $nid, array('attributes' => array('class' => 'remove-node'), 'query' => array('destination' => $_GET['q']))) . '<br/>';  
+  $markup .= l($title, 'node/' . $nid) . l('X', 'unflag-node/' . $uid . '/' . $nid, array('attributes' => array('class' => 'remove-node'), 'query' => array('destination' => $_GET['q']))) . '<br/>';  
   }
   
   $form['fields']['list'] = array(  
@@ -127,7 +127,7 @@ function autocomplete_flag_select_form() {
     '#size' => 25,
     '#autocomplete_path' => "autocomplete_flag_select/autocomplete",
   );  
-   
+
   // use custom submit handler
   $form['fields']['buttons']['submit'] = array(
     '#type' => 'submit',
@@ -138,7 +138,7 @@ function autocomplete_flag_select_form() {
 }
 
 /**
- * Implementation of hook_submit()
+ * Implementation of hook_submit ().
  */
 function autocomplete_flag_select_form_submit($form, &$form_state) {
   // Get the nid from submitted node title
@@ -146,7 +146,7 @@ function autocomplete_flag_select_form_submit($form, &$form_state) {
   $nid = substr($form_state['values']['node'], $start, -1);
   
   $flag_get = variable_get('autocomplete_flag_select_flag_type', '');
-  if(!empty($flag_get)) {
+  if (!empty($flag_get)) {
     // switch user to correct user for flagging
     global $user;
     $curren_user = $user;
@@ -156,7 +156,7 @@ function autocomplete_flag_select_form_submit($form, &$form_state) {
     $flag = flag_get_flag($flag_get) or die('no ' . $flag_get . ' flag defined');
     if (!$flag->is_flagged($nid)) {
       $flag->flag('flag', $nid);
-    	drupal_set_message($flag->flag_message);
+      drupal_set_message($flag->flag_message);
     }
     // switch user back to correct user
     $user = $curren_user;
@@ -165,7 +165,7 @@ function autocomplete_flag_select_form_submit($form, &$form_state) {
 }
 
 /**
- *  Check what nid to unflag
+ *  Check what nid to unflag.
  */
 function _autocomplete_flag_select_unflag_node($uid, $nid) {
   // makesure integer values are supplied
@@ -175,7 +175,7 @@ function _autocomplete_flag_select_unflag_node($uid, $nid) {
   // Get the nid from submitted node title
   $flag_get = variable_get('autocomplete_flag_select_flag_type', '');  
   // print_r($flaggings);
-  if(!empty($flag_get)) {
+  if (!empty($flag_get)) {
     // switch user to correct user for flagging
     global $user;
     $curren_user = $user;
@@ -185,7 +185,7 @@ function _autocomplete_flag_select_unflag_node($uid, $nid) {
     $flag = flag_get_flag($flag_get) or die('no ' . $flag_get . ' flag defined');
     if ($flag->is_flagged($nid)) {
       $flag->flag('unflag', $nid);
-    	drupal_set_message($flag->unflag_message);
+      drupal_set_message($flag->unflag_message);
     }
     // switch user back to correct user
     $user = $curren_user;
@@ -196,15 +196,15 @@ function _autocomplete_flag_select_unflag_node($uid, $nid) {
 }
 
 /**
- * Implementation of hook_autocomplete()
+ * Implementation of hook_autocomplete ().
  */
 function autocomplete_flag_select_autocomplete($string) {
   return theme('autocomplete_flag_select_autocomplete', $string); 
 }
 
 /**
-* Implementation of hook_theme().
-*/
+ * Implementation of hook_theme ().
+ */
 function autocomplete_flag_select_theme() {
   return array(
     // Themes for the formatters.
@@ -216,8 +216,8 @@ function autocomplete_flag_select_theme() {
 }
 
 /**
-* Theme function for 'default' companyfield formatter.
-*/
+ * Theme function for 'default' autocomplete flag select autocomplete.
+ */
 function theme_autocomplete_flag_select_autocomplete($string) {
   global $user;
   // Get the content type to search for.
@@ -237,8 +237,8 @@ function theme_autocomplete_flag_select_autocomplete($string) {
 }
 
 /**
-* Theme function for 'default' companyfield formatter.
-*/
+ * Theme function for 'default' autocomplete flag select nodes flagged.
+ */
 function theme_autocomplete_flag_select_nodes_flagged() {
   global $user;
   // Get the content type to search for.
@@ -252,7 +252,7 @@ function theme_autocomplete_flag_select_nodes_flagged() {
   
   $matches = array();
   //assigns the actual values into an array
-  while($row = db_fetch_array($sql)) {
+  while ($row = db_fetch_array($sql)) {
     $matches[$row['nid']] = $row['title'];
   }
   return $matches;
