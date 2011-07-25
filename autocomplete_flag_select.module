@@ -10,11 +10,13 @@ function autocomplete_flag_select_help($path, $args) {
 }
 
 
-/**  
+/**
  * Implementation of hook_init()
- */
- 
-// function autocomplete_flag_select_init() 
+ */ 
+function autocomplete_flag_select_init() {
+  $path = drupal_get_path('module', 'autocomplete_flag_select');
+  drupal_add_css($path .'/autocomplete_flag_select.css');
+}
 
 /**
  * Implementation of hook_menu()
@@ -74,7 +76,7 @@ function autocomplete_flag_select_block($op = 'list', $delta = 0, $edit = array(
 */
 function autocomplete_flag_select_form() {
   $form = array();
-
+   
   global $user;
   $uid = 0;
   // get user to be flag
