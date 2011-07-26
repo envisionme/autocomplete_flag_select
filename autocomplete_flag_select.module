@@ -28,12 +28,12 @@ function autocomplete_flag_select_init() {
  * Implementation of hook_menu ().
  */
 function  autocomplete_flag_select_menu() {   
-  $items['admin/build/autocomplete_flag_select'] = array(
+  $items['admin/build/flags/autocomplete_flag_select'] = array(
     'title' => 'Autocomplete flag select',
     'description' => 'Configure the autocomplete flag select.',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('autocomplete_flag_select_settings_form'),
-    'access arguments' => array(1),
+    'access arguments' => array('administer access to autocomplete flag select'),
     'file' => 'autocomplete_flag_select.admin.inc',
   );
   
@@ -104,7 +104,7 @@ function autocomplete_flag_select_form() {
   
   $form['fields'] = array(
     '#type' => 'fieldset',
-    '#description' => t('Please enter node title to flag the user with.'),
+    '#description' => t('Please enter node title to flag the user.'),
     '#collapsible' => FALSE,
     '#collapsed' => FALSE,
     '#attributes' => array('class' => 'autocomplete-flag-select'),

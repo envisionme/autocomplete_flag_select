@@ -5,8 +5,9 @@ to tag another user easily via an autocomplete search textbox.
 
 -- REQUIREMENTS --
 
-None.
-
+* Flag module required.
+  
+  - In order for Autocomplete flag select module to flag user nodes, the flag module needs to be installed and enabled aswell.
 
 -- INSTALLATION --
 
