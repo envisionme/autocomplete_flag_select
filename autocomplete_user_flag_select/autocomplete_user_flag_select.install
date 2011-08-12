@@ -1,0 +1,12 @@
+<?php
+/**
+ * @file
+ * Installation file for the Autocomplete module.
+ */
+
+/**
+ * Implementation of hook_uninstall().
+ */
+function autocomplete_user_flag_select_uninstall() {
+  variable_del('autocomplete_user_flag_select_flag_fid');
+}

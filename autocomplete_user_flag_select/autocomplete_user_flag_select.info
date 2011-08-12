@@ -1,0 +1,5 @@
+name = "Autocomplete user flag select"
+description = "Autocomplete user flag select for drupal"
+package = "User interface"
+dependencies[] = flag
+core = 6.x
