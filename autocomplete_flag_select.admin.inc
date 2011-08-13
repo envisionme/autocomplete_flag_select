@@ -28,8 +28,7 @@ function autocomplete_flag_select_settings_form() {
   foreach ($flags as $flag) {
       $flag_types[$flag->fid] = $flag->title;
   }
-  dpm($flag_types);
-
+  
   // List all Content Types
   $form['autocomplete_flag_select_node_type'] = array(
     '#type' => 'select',
