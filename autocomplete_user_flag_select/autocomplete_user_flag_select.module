@@ -113,7 +113,7 @@ function autocomplete_user_flag_select_form() {
   );
 
   // get nodes user was flagged with
-  $flagged_users = autocomplete_user_flag_select_users_flagged();
+  $flagged_users = theme('autocomplete_user_flag_select_users_flagged');
   $markup = '';
   foreach ($flagged_users as $uid => $title) {
     $markup .= l($title, 'user/' . $uid) . l('X', 'unflag-user/' . $uid , array('attributes' => array('class' => 'remove-user'), 'query' => array('destination' => $_GET['q']))) . '<br/>';  
@@ -164,14 +164,7 @@ function autocomplete_user_flag_select_form_submit($form, &$form_state) {
  * Implementation of hook_autocomplete ().
  */
 function autocomplete_user_flag_select_autocomplete($string) {
-  $matches = array();
-  // get text that have been filled in and autocomplete the text with a list of information generated from system,
-  // in this case we would like to find all the user in the system
-  $result = db_query("SELECT u.uid, u.name FROM {users} u WHERE u.name LIKE '%s%%' ",$string);
-    while ($row = db_fetch_array($result)) {
-      $matches[$row['name'] . ' [uid:' . $row['uid'] . ']'] = check_plain($row['name']);
-    }
-  return drupal_json($matches);
+  return theme('autocomplete_user_flag_select_autocomplete', $string);  
 }
 
 /**
@@ -199,9 +192,36 @@ function _autocomplete_user_flag_select_unflag_user($uid) {
 }
 
 /**
- * Theme function for 'default' autocomplete flag select users flagged.
+ * Implementation of hook_theme ().
  */
-function autocomplete_user_flag_select_users_flagged() {
+function autocomplete_user_flag_select_theme() {
+  return array(
+    // Themes for the formatters.
+    'autocomplete_user_flag_select_autocomplete' => array(
+      'arguments' => array('string' => ''),
+    ),    
+    'autocomplete_user_flag_select_users_flagged' => array(),
+  );
+}
+
+/**
+ * Theme function for 'default' autocomplete user flag select autocomplete.
+ */
+function theme_autocomplete_user_flag_select_autocomplete($string) {  
+  $matches = array();
+  // get text that have been filled in and autocomplete the text with a list of information generated from system,
+  // in this case we would like to find all the user in the system
+  $result = db_query("SELECT u.uid, u.name FROM {users} u WHERE u.name LIKE '%s%%' ",$string);
+    while ($row = db_fetch_array($result)) {
+      $matches[$row['name'] . ' [uid:' . $row['uid'] . ']'] = check_plain($row['name']);
+    }
+  return drupal_json($matches);
+}
+
+/**
+ * Theme function for 'default' autocomplete user flag select users flagged.
+ */
+function theme_autocomplete_user_flag_select_users_flagged() {
   global $user;
   // Get the content type to search for.
   $matches = array();
