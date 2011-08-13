@@ -35,14 +35,14 @@ function autocomplete_user_flag_select_menu() {
     'access arguments' => array('administer access to autocomplete user flag select'),
     'file' => 'autocomplete_user_flag_select.admin.inc',
   );
-  
+  // create menu path to autocomplete textfield
   $items["autocomplete_user_flag_select/autocomplete"] = array(
     'title' => 'Autocomplete user flag select',
     'page callback' => 'autocomplete_user_flag_select_autocomplete',
     'access arguments' => array('allow autocomplete user flag select access'),
     'type' => MENU_CALLBACK
   );
-  
+  // unflag the user if global user desides to delete user from list
   $items['unflag-user/%'] = array(
     'title' => 'Unflag user',
     'page callback' => '_autocomplete_user_flag_select_unflag_user',
@@ -77,8 +77,12 @@ function autocomplete_user_flag_select_block($op = 'list', $delta = 0, $edit = a
     break;
     
     case 'view':
+    $fid = variable_get('autocomplete_user_flag_select_flag_fid', '');
+    // Check if user is logged in and has permission to access block
+    if (arg(0) == 'user' && is_numeric(arg(1)) && !empty($fid) && user_access('allow autocomplete user flag select access')){
         $block['content'] = drupal_get_form('autocomplete_user_flag_select_form', 'block'); 
         return $block;
+    }
     break;
   }
 }
@@ -147,11 +151,13 @@ function autocomplete_user_flag_select_form_submit($form, &$form_state) {
   if (!empty($fid) && !empty($uid)) {
     // Flag node
     $flag = flag_get_flag(NULL, $fid) or die('no flag defined');
+    // check if user has not been flagged already
     if (!$flag->is_flagged($uid, $user->uid)) {
+    // global user flag user that was search for if not yet flagged
       $flag->flag('flag', $uid, $user);
       drupal_set_message($flag->flag_message);
     }
-  }  /**/
+  }
 }
 
 /**
@@ -159,6 +165,8 @@ function autocomplete_user_flag_select_form_submit($form, &$form_state) {
  */
 function autocomplete_user_flag_select_autocomplete($string) {
   $matches = array();
+  // get text that have been filled in and autocomplete the text with a list of information generated from system,
+  // in this case we would like to find all the user in the system
   $result = db_query("SELECT u.uid, u.name FROM {users} u",$string);
     while ($row = db_fetch_array($result)) {
       $matches[$row['name'] . ' [uid:' . $row['uid'] . ']'] = check_plain($row['name']);
@@ -171,13 +179,12 @@ function autocomplete_user_flag_select_autocomplete($string) {
  */
 function _autocomplete_user_flag_select_unflag_user($uid) {
   global $user;
-  // makesure integer values are supplied
+  // make sure integer values are supplied
   if (!is_numeric($uid))
     return '';
     
-  // Get the nid from submitted node title
-  $fid = variable_get('autocomplete_user_flag_select_flag_fid', '');  
-  // print_r($flaggings);
+  // get fid from flag that was selected to be unflagged
+  $fid = variable_get('autocomplete_user_flag_select_flag_fid', '');
   if (!empty($fid)) {
     // Unflag node
     $flag = flag_get_flag(NULL, $fid) or die('no flag defined');
@@ -186,6 +193,7 @@ function _autocomplete_user_flag_select_unflag_user($uid) {
       drupal_set_message($flag->unflag_message);
     }
   }
+  // when unflagged go back to destination where the action was performed
   drupal_goto(drupal_get_destination());
   return '';
 }
@@ -197,8 +205,9 @@ function autocomplete_user_flag_select_users_flagged() {
   global $user;
   // Get the content type to search for.
   $matches = array();
-  
+  // get flag type's fid that was selected by user
   $fid = variable_get('autocomplete_user_flag_select_flag_fid', '');
+  // get all user that have been flagged by global user
   $result = db_query("SELECT u.uid, u.name FROM {users} u INNER JOIN {flag_content} f ON u.uid = f.content_id WHERE f.uid = %d  AND f.fid = %d", $user->uid, $fid);
   
   $matches = array();
