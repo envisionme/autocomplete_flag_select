@@ -79,7 +79,7 @@ function autocomplete_user_flag_select_block($op = 'list', $delta = 0, $edit = a
     case 'view':
     $fid = variable_get('autocomplete_user_flag_select_flag_fid', '');
     // Check if user is logged in and has permission to access block
-    if (arg(0) == 'user' && is_numeric(arg(1)) && !empty($fid) && user_access('allow autocomplete user flag select access')){
+    if (!empty($fid) && user_access('allow autocomplete user flag select access')){
         $block['content'] = drupal_get_form('autocomplete_user_flag_select_form', 'block'); 
         return $block;
     }
@@ -167,7 +167,7 @@ function autocomplete_user_flag_select_autocomplete($string) {
   $matches = array();
   // get text that have been filled in and autocomplete the text with a list of information generated from system,
   // in this case we would like to find all the user in the system
-  $result = db_query("SELECT u.uid, u.name FROM {users} u",$string);
+  $result = db_query("SELECT u.uid, u.name FROM {users} u WHERE u.name LIKE '%s%%' ",$string);
     while ($row = db_fetch_array($result)) {
       $matches[$row['name'] . ' [uid:' . $row['uid'] . ']'] = check_plain($row['name']);
     }
