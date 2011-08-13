@@ -116,7 +116,8 @@ function autocomplete_user_flag_select_form() {
   $flagged_users = theme('autocomplete_user_flag_select_users_flagged');
   $markup = '';
   foreach ($flagged_users as $uid => $title) {
-    $markup .= l($title, 'user/' . $uid) . l('X', 'unflag-user/' . $uid , array('attributes' => array('class' => 'remove-user'), 'query' => array('destination' => $_GET['q']))) . '<br/>';  
+    $name = theme('username', user_load($uid));
+    $markup .= $name . l('X', 'unflag-user/' . $uid , array('attributes' => array('class' => 'remove-user'), 'query' => array('destination' => $_GET['q']))) . '<br/>';
   }
 
   $form['fields']['list'] = array(  
@@ -150,12 +151,12 @@ function autocomplete_user_flag_select_form_submit($form, &$form_state) {
   $fid = variable_get('autocomplete_user_flag_select_flag_fid', '');
   if (!empty($fid) && !empty($uid)) {
     // Flag node
+    $flag_name = flag_get_flag(NULL, $fid);
     $flag = flag_get_flag(NULL, $fid) or die('no flag defined');
     // check if user has not been flagged already
     if (!$flag->is_flagged($uid, $user->uid)) {
     // global user flag user that was search for if not yet flagged
-      $flag->flag('flag', $uid, $user);
-      drupal_set_message($flag->flag_message);
+    $flag->flag('flag', $uid, $user);
     }
   }
 }
@@ -183,7 +184,6 @@ function _autocomplete_user_flag_select_unflag_user($uid) {
     $flag = flag_get_flag(NULL, $fid) or die('no flag defined');
     if ($flag->is_flagged($uid, $user->uid)) {
       $flag->flag('unflag', $uid, $user);
-      drupal_set_message($flag->unflag_message);
     }
   }
   // when unflagged go back to destination where the action was performed
