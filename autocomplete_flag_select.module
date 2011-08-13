@@ -61,7 +61,7 @@ function autocomplete_flag_select_access($nid = 0) {
   // get the node author UID
   $result = db_query('SELECT n.uid FROM {node} n WHERE n.nid = %d LIMIT 1', $nid);
   $uid = db_fetch_array($result);
-  return (user_access('allow autocomplete flag select access') && $uid == $user->uid) || user_access('administer access to autocomplete flag select');
+  return (user_access('allow autocomplete flag select access') && $uid != $user->uid) || user_access('administer access to autocomplete flag select');
 }
 
 /**
@@ -111,9 +111,9 @@ function autocomplete_flag_select_form() {
   );
   
   // get nodes user was flagged with
-  $flagged_nodes = theme('autocomplete_flag_select_nodes_flagged');
+  $fid = theme('autocomplete_flag_select_nodes_flagged');
   $markup = '';
-  foreach ($flagged_nodes as $nid => $title) {
+  foreach ($fid as $nid => $title) {
   $markup .= l($title, 'node/' . $nid) . l('X', 'unflag-node/' . $uid . '/' . $nid, array('attributes' => array('class' => 'remove-node'), 'query' => array('destination' => $_GET['q']))) . '<br/>';  
   }
   
