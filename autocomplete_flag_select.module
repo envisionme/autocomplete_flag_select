@@ -76,7 +76,7 @@ function autocomplete_flag_select_block($op = 'list', $delta = 0, $edit = array(
     break;
     
     case 'view':
-      $flag_type = variable_get('autocomplete_flag_select_flag_type', '');
+      $flag_type = variable_get('autocomplete_flag_select_flag_fid', '');
       if (arg(0) == 'user' && is_numeric(arg(1)) && !empty($flag_type) && user_access('allow autocomplete flag select access')) {
         $block['content'] = drupal_get_form('autocomplete_flag_select_form', 'block'); 
         return $block;
@@ -145,11 +145,11 @@ function autocomplete_flag_select_form_submit($form, &$form_state) {
   $start = strripos($form_state['values']['node'], '[nid:')+5;
   $nid = substr($form_state['values']['node'], $start, -1);
   
-  $flag_get = variable_get('autocomplete_flag_select_flag_type', '');
-  if (!empty($flag_get)) {
+  $fid = variable_get('autocomplete_flag_select_flag_fid', '');
+  if (!empty($fid) && !empty($nid)) {
     $flagged_user = user_load($form_state['values']['flagged_user']);
     // Flag node
-    $flag = flag_get_flag($flag_get) or die('no ' . $flag_get . ' flag defined');
+    $flag = flag_get_flag(NULL, $fid) or die('no flag defined');
     if (!$flag->is_flagged($nid, $flagged_user->uid)) {
       $flag->flag('flag', $nid, $flagged_user);
       drupal_set_message($flag->flag_message);
@@ -166,12 +166,11 @@ function _autocomplete_flag_select_unflag_node($uid, $nid) {
     return '';
     
   // Get the nid from submitted node title
-  $flag_get = variable_get('autocomplete_flag_select_flag_type', '');  
-  // print_r($flaggings);
-  if (!empty($flag_get)) {
+  $fid = variable_get('autocomplete_flag_select_flag_fid', '');
+  if (!empty($fid)) {
     $flagged_user = user_load($uid);
     // Unflag node
-    $flag = flag_get_flag($flag_get) or die('no ' . $flag_get . ' flag defined');
+    $flag = flag_get_flag(NULL, $fid) or die('no flag defined');
     if ($flag->is_flagged($nid, $flagged_user->uid)) {
       $flag->flag('unflag', $nid, $flagged_user);
       drupal_set_message($flag->unflag_message);
@@ -232,9 +231,8 @@ function theme_autocomplete_flag_select_nodes_flagged() {
   
   $matches = array();
   
-  $fid = variable_get('autocomplete_flag_select_flag_type', '');
-  
-  $sql = db_query("SELECT n.nid, n.title FROM {node} n INNER JOIN {flag_content} f ON n.nid = f.content_id WHERE n.status = 1 AND n.uid = %d AND n.type = '%s' AND f.uid = %d", $user->uid, $content_type, arg(1));  
+  $fid = variable_get('autocomplete_flag_select_flag_fid', '');
+  $sql = db_query("SELECT n.nid, n.title FROM {node} n INNER JOIN {flag_content} f ON n.nid = f.content_id WHERE n.status = 1 AND n.uid = %d AND n.type = '%s' AND f.uid = %d AND f.fid = %d", $user->uid, $content_type, arg(1), $fid);
   
   $matches = array();
   //assigns the actual values into an array

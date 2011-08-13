@@ -23,12 +23,12 @@ function autocomplete_flag_select_settings_form() {
   $content_types[$key] = $type;
   }
 
-  // Get all the flag types from the system.
+  // get all the flag types from the system
   $flags = flag_get_flags();
-  $flag_names = array();
   foreach ($flags as $flag) {
-  $flag_names[$flag->name] = $flag->title;
+      $flag_types[$flag->fid] = $flag->title;
   }
+  dpm($flag_types);
 
   // List all Content Types
   $form['autocomplete_flag_select_node_type'] = array(
@@ -39,11 +39,11 @@ function autocomplete_flag_select_settings_form() {
     '#description' => t('Content type to be used for the Autocomplete flag'),
   );
   // List all Flag types
-  $form['autocomplete_flag_select_flag_type'] = array(
+  $form['autocomplete_flag_select_flag_fid'] = array(
     '#type' => 'select',
     '#title' => t('Flag type'),
-    '#default_value' => variable_get('autocomplete_flag_select_flag_type', ''),
-    '#options' => $flag_names,
+    '#default_value' => variable_get('autocomplete_flag_select_flag_fid', ''),
+    '#options' => $flag_types,
     '#description' => t('Choose Flag'),
   );
   return system_settings_form($form);
