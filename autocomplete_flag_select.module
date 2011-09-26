@@ -52,6 +52,15 @@ function  autocomplete_flag_select_menu() {
     'access arguments' => array(2),
     'type' => MENU_CALLBACK,
   );
+  
+  $items['flag-node/%/%'] = array(
+    'title' => 'Flag node',
+    'page callback' => '_autocomplete_flag_select_flag_node',
+    'page arguments' => array(1, 2),
+    'access callback' => 'autocomplete_flag_select_access',
+    'access arguments' => array(2),
+    'type' => MENU_CALLBACK,
+  );
   return $items;
 }
 
@@ -174,6 +183,29 @@ function _autocomplete_flag_select_unflag_node($uid, $nid) {
     if ($flag->is_flagged($nid, $flagged_user->uid)) {
       $flag->flag('unflag', $nid, $flagged_user);
       drupal_set_message($flag->unflag_message);
+    }
+  }
+  drupal_goto(drupal_get_destination());
+  return '';
+}
+
+/**
+ *  Check what nid to flag.
+ */
+function _autocomplete_flag_select_flag_node($uid, $nid) {
+  // makesure integer values are supplied
+  if (!is_numeric($uid) || !is_numeric($nid))
+    return '';
+    
+  // Get the nid from submitted node title
+  $fid = variable_get('autocomplete_flag_select_flag_fid', '');
+  if (!empty($fid)) {
+    $flagged_user = user_load($uid);
+    // flag node
+    $flag = flag_get_flag(NULL, $fid) or die('no flag defined');
+    if (!$flag->is_flagged($nid, $flagged_user->uid)) {
+      $flag->flag('flag', $nid, $flagged_user);
+      drupal_set_message($flag->flag_message);
     }
   }
   drupal_goto(drupal_get_destination());
