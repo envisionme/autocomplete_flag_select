@@ -163,7 +163,8 @@ function autocomplete_flag_select_form_submit($form, &$form_state) {
       $flag->flag('flag', $nid, $flagged_user);
       drupal_set_message($flag->flag_message);
     }
-  }
+  } else
+    drupal_set_message('Invalid node, and can\'t be flagged', 'error');
 }
 
 /**
