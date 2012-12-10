@@ -75,12 +75,12 @@ function autocomplete_user_flag_select_block($op = 'list', $delta = 0, $edit = a
       $blocks[0]['info'] = t('Autocomplete user flag select');
       return $blocks;
     break;
-    
+
     case 'view':
     $fid = variable_get('autocomplete_user_flag_select_flag_fid', '');
     // Check if user is logged in and has permission to access block
     if (!empty($fid) && user_access('allow autocomplete user flag select access')){
-        $block['content'] = drupal_get_form('autocomplete_user_flag_select_form', 'block'); 
+        $block['content'] = drupal_get_form('autocomplete_user_flag_select_form', 'block');
         return $block;
     }
     break;
@@ -116,11 +116,11 @@ function autocomplete_user_flag_select_form() {
   $flagged_users = theme('autocomplete_user_flag_select_users_flagged');
   $markup = '';
   foreach ($flagged_users as $uid => $title) {
-    $name = theme('username', user_load($uid));
-    $markup .= $name . l('X', 'unflag-user/' . $uid , array('attributes' => array('class' => 'remove-user'), 'query' => array('destination' => $_GET['q']))) . '<br/>';
-  }
+    $name = theme('username', user_load($uid), array('plain' => TRUE));
+    $markup .= l($name,'user/'.$uid, array('attributes' => array('target' => '_blank'))) . ' ' . l('X', 'unflag-user/' . $uid , array('attributes' => array('class' => 'remove-user'), 'query' => array('destination' => $_GET['q']))) . '<br/>';
+}
 
-  $form['fields']['list'] = array(  
+  $form['fields']['list'] = array(
     '#attributes' => array('class' => 'autocomplete-user-flag-select-title'),
     '#value' => $markup,
   );
@@ -129,7 +129,7 @@ function autocomplete_user_flag_select_form() {
     '#type' => 'textfield',
     '#size' => 25,
     '#autocomplete_path' => "autocomplete_user_flag_select/autocomplete",
-  );  
+  );
 
   // use custom submit handler
   $form['fields']['buttons']['submit'] = array(
@@ -151,12 +151,17 @@ function autocomplete_user_flag_select_form_submit($form, &$form_state) {
   $fid = variable_get('autocomplete_user_flag_select_flag_fid', '');
   if (!empty($fid) && !empty($uid)) {
     // Flag node
-    $flag_name = flag_get_flag(NULL, $fid);
     $flag = flag_get_flag(NULL, $fid) or die('no flag defined');
+
+    $company_uid = _autocomplete_user_flag_select_is_flagged($uid);
+    $company_profile = get_user_profile($company_uid->company_uid);
+    $user_profile = get_user_profile($company_uid->uid);
     // check if user has not been flagged already
-    if (!$flag->is_flagged($uid, $user->uid)) {
-    // global user flag user that was search for if not yet flagged
-    $flag->flag('flag', $uid, $user);
+    if ($user->uid == $company_uid->company_uid) {
+      // global user flag user that was search for if not yet flagged
+      $flag->flag('flag', $uid, $user);
+    }else{
+      drupal_set_message(t(theme('username', $user_profile).' was already added as collaborator for '.theme('username', $company_profile)),'error');
     }
   }
 }
@@ -165,7 +170,7 @@ function autocomplete_user_flag_select_form_submit($form, &$form_state) {
  * Implementation of hook_autocomplete ().
  */
 function autocomplete_user_flag_select_autocomplete($string) {
-  return theme('autocomplete_user_flag_select_autocomplete', $string);  
+  return theme('autocomplete_user_flag_select_autocomplete', $string);
 }
 
 /**
@@ -176,7 +181,7 @@ function _autocomplete_user_flag_select_unflag_user($uid) {
   // make sure integer values are supplied
   if (!is_numeric($uid))
     return '';
-    
+
   // get fid from flag that was selected to be unflagged
   $fid = variable_get('autocomplete_user_flag_select_flag_fid', '');
   if (!empty($fid)) {
@@ -199,7 +204,7 @@ function autocomplete_user_flag_select_theme() {
     // Themes for the formatters.
     'autocomplete_user_flag_select_autocomplete' => array(
       'arguments' => array('string' => ''),
-    ),    
+    ),
     'autocomplete_user_flag_select_users_flagged' => array(),
   );
 }
@@ -207,7 +212,7 @@ function autocomplete_user_flag_select_theme() {
 /**
  * Theme function for 'default' autocomplete user flag select autocomplete.
  */
-function theme_autocomplete_user_flag_select_autocomplete($string) {  
+function theme_autocomplete_user_flag_select_autocomplete($string) {
   $matches = array();
   // get text that have been filled in and autocomplete the text with a list of information generated from system,
   // in this case we would like to find all the user in the system
@@ -223,17 +228,26 @@ function theme_autocomplete_user_flag_select_autocomplete($string) {
  */
 function theme_autocomplete_user_flag_select_users_flagged() {
   global $user;
-  // Get the content type to search for.
-  $matches = array();
-  // get flag type's fid that was selected by user
   $fid = variable_get('autocomplete_user_flag_select_flag_fid', '');
-  // get all user that have been flagged by global user
   $result = db_query("SELECT u.uid, u.name FROM {users} u INNER JOIN {flag_content} f ON u.uid = f.content_id WHERE f.uid = %d  AND f.fid = %d", $user->uid, $fid);
-  
+
   $matches = array();
   //assigns the actual values into an array
   while ($row = db_fetch_array($result)) {
     $matches[$row['uid']] = $row['name'];
   }
+  // Print out all users that have been flagged by company
   return $matches;
+}
+
+function _autocomplete_user_flag_select_is_flagged($uid) {
+  // get flag type's fid that was selected by user
+  $fid = variable_get('autocomplete_user_flag_select_flag_fid', '');
+  // get all user that have been flagged by global user
+  $result = db_query("SELECT f.content_id AS uid, f.uid AS company_uid FROM {flag_content} f WHERE f.fid = %d AND f.content_id = %d", $fid, $uid);
+  $row = db_fetch_object($result);
+  if (!empty($row)) {
+    return $row;
+  }
+  return false;
 }
