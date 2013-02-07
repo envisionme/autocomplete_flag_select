@@ -153,15 +153,15 @@ function autocomplete_user_flag_select_form_submit($form, &$form_state) {
     // Flag node
     $flag = flag_get_flag(NULL, $fid) or die('no flag defined');
 
-    $company_uid = _autocomplete_user_flag_select_is_flagged($uid);
-    $company_profile = get_user_profile($company_uid->company_uid);
-    $user_profile = get_user_profile($company_uid->uid);
-    // check if user has not been flagged already
-    if ($user->uid == $company_uid->company_uid) {
-      // global user flag user that was search for if not yet flagged
+    $is_flagged = _autocomplete_user_flag_select_is_flagged($uid);
+    $company_profile = get_user_profile($user->uid);
+    $user_profile = get_user_profile($is_flagged->uid);
+
+    if (empty($is_flagged)) {
+      // Only flag user that have not been flagged yet
       $flag->flag('flag', $uid, $user);
-    }else{
-      drupal_set_message(t(theme('username', $user_profile).' was already added as collaborator for '.theme('username', $company_profile)),'error');
+    }elseif(($user->uid != $is_flagged->company_uid) || ($user->uid == $is_flagged->company_uid)) {
+      drupal_set_message(t(theme('username', $user_profile).' was already added as a collaborator for '.theme('username', $company_profile)),'error');
     }
   }
 }
