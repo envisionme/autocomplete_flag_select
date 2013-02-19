@@ -77,6 +77,7 @@ function autocomplete_flag_select_access($nid = 0) {
  * Implementation of hook_block ().
  */
 function autocomplete_flag_select_block($op = 'list', $delta = 0, $edit = array()) {
+  global $user;
   switch ($op) {
     //Define the block
     case 'list':
@@ -85,18 +86,14 @@ function autocomplete_flag_select_block($op = 'list', $delta = 0, $edit = array(
     break;
 
     case 'view':
-      $fid = theme('autocomplete_flag_select_nodes_flagged');
-      $errors = array_filter($fid);
-      if (!empty($errors)) {
-        $flag_type = variable_get('autocomplete_flag_select_flag_fid', '');
-        if (arg(0) == 'user' && is_numeric(arg(1)) && !empty($flag_type) && user_access('allow autocomplete flag select access')) {
-          $block['content'] = drupal_get_form('autocomplete_flag_select_form', 'block');
-          return $block;
-        }
-      } else {
-        return $block['content'] = '';
+      $flag_type = variable_get('autocomplete_flag_select_flag_fid', '');
+      if (arg(0) == 'user' && is_numeric(arg(1)) && ($user->uid != arg(1)) && !empty($flag_type) && user_access('allow autocomplete flag select access')) {
+        $block['content'] = drupal_get_form('autocomplete_flag_select_form', 'block');
+        return $block;
+      }else {
+        return '';
       }
-    break;
+      break;
   }
 }
 
