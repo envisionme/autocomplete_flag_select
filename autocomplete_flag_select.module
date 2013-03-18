@@ -145,6 +145,7 @@ function autocomplete_flag_select_form() {
     '#type' => 'submit',
     '#value' => t('Shortlist'),
     '#submit' => array('autocomplete_flag_select_form_submit'),
+    '#attributes' => array('class' => 'btn btn-block')
   );
   return $form;
 }
