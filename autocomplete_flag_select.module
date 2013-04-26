@@ -145,7 +145,6 @@ function autocomplete_flag_select_form() {
     '#type' => 'submit',
     '#value' => t('Shortlist'),
     '#submit' => array('autocomplete_flag_select_form_submit'),
-    '#attributes' => array('class' => 'btn btn-block')
   );
   return $form;
 }
@@ -245,19 +244,32 @@ function theme_autocomplete_flag_select_autocomplete($string) {
   // Get the content type to search for.
   $select_type = variable_get('autocomplete_flag_select_node_type', '');
   $matches = array();
+
+  $company_uid = 0;
+  if (njs_is_company($user->uid)) {
+    $company_uid .= $user->uid;
+  } else if (njs_is_recruiter($user->uid)) {
+    $company_uid .= njs_get_company_from_sub_uid($user->uid);
+  }
   // create the SQL to query the node table
-  $sql = "SELECT n.nid, n.title FROM {node} n WHERE n.status = 1 AND n.type = '%s' AND lower(n.title) LIKE lower('%%%s%%') AND n.uid = %d ORDER BY n.title ASC";
+  $sql = db_query("SELECT * FROM {node} n
+  INNER JOIN {content_type_job_specification} c ON n.nid = c.nid
+  WHERE n.status = 1 AND n.type = '%s' AND lower(n.title) LIKE lower('%%%s%%')
+  AND (n.uid = %d OR c.field_job_spec_company_uid = %d)"
+  ,$select_type, $string, $company_uid, $company_uid);
 
   // query the database
   if (!empty($select_type)) {
-    $res = db_query_range($sql, $select_type, $string, $user->uid, 0, 10);
-    while ($row = db_fetch_array($res)) {
-      $matches[$row['title'] . ' [nid:' . $row['nid'] . ']'] = check_plain($row['title']);
+    while ($row = db_fetch_array($sql)) {
+      if (!empty($row)) {
+        $matches[$row['title'] . ' [nid:' . $row['nid'] . ']'] = check_plain($row['title']);
+      } else {
+        $matches[] = '';
+      }
     }
   }
   return drupal_json($matches);
 }
-
 /**
  * Theme function for 'default' autocomplete flag select nodes flagged.
  */
@@ -265,8 +277,6 @@ function theme_autocomplete_flag_select_nodes_flagged() {
   global $user;
   // Get the content type to search for.
   $content_type = variable_get('autocomplete_flag_select_node_type', '');
-
-  $matches = array();
 
   $fid = variable_get('autocomplete_flag_select_flag_fid', '');
   $sql = db_query("SELECT n.nid, n.title FROM {node} n INNER JOIN {flag_content} f ON n.nid = f.content_id WHERE n.status = 1 AND n.uid = %d AND n.type = '%s' AND f.uid = %d AND f.fid = %d", $user->uid, $content_type, arg(1), $fid);
