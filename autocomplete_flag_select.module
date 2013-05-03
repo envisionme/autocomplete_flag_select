@@ -278,13 +278,20 @@ function theme_autocomplete_flag_select_nodes_flagged() {
   $content_type = variable_get('autocomplete_flag_select_node_type', '');
   $fid = variable_get('autocomplete_flag_select_flag_fid', '');
 
+  $company_uid = 0;
+  if (njs_is_company($user->uid)) {
+    $company_uid .= $user->uid;
+  } else if (njs_is_recruiter($user->uid)) {
+    $company_uid .= njs_get_company_from_sub_uid($user->uid);
+  }
+
   $sql = db_query("SELECT n.nid, n.title
                   FROM {node} n
                   INNER JOIN {flag_content} f
                   ON n.nid = f.content_id
                   WHERE n.status = 1 AND n.uid = %d AND n.type= '%s'
                   AND f.uid = %d AND f.fid = %d",
-                  $user->uid, $content_type, arg(1),$fid);
+                  $company_uid, $content_type, arg(1),$fid);
 
   $matches = array();
   //assigns the actual values into an array
